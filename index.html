@@ -1,0 +1,1036 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  ArrowLeft,
+  RotateCcw,
+  Copy,
+  Check,
+  Lock,
+  Compass,
+  Sparkles,
+  MessageCircle,
+  ChevronRight,
+  Info,
+  HeartHandshake,
+  UserCheck
+} from 'lucide-react';
+
+// Tipos de datos
+type OptionColor = 'green' | 'amber' | 'red';
+
+interface QuestionOption {
+  id: OptionColor;
+  label: string;
+  badge: string;
+  description: string;
+  colorType: OptionColor;
+}
+
+interface Question {
+  id: number;
+  axis: string;
+  category: string;
+  title: string;
+  subtitle: string;
+  options: QuestionOption[];
+}
+
+// 7 reactivos basados estrictamente en el prompt y adaptados para ejecutivas
+const QUESTIONS: Question[] = [
+  {
+    id: 1,
+    axis: 'Eje 1: Comunicación & Disponibilidad',
+    category: 'Coherencia en la comunicación',
+    title: '¿Mantiene contacto regular y claro, o desaparece por días y reaparece como si nada?',
+    subtitle: 'La consistencia en las respuestas es el primer indicador de orden mental y respeto por tu tiempo.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Comunicación constante, predecible y respetuosa',
+        description: 'Mantiene el flujo de conversación sin juegos de poder. Si tiene un día laboral saturado o compromisos, avisa con cortesía y retoma el contacto de forma proactiva.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Intermitencia y ritmo irregular',
+        description: 'Hay días con gran entusiasmo e hiperconectividad, seguidos de 2 o 3 días de silencio o monosílabos. Responde tarde excusándose siempre con "mucho trabajo".',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Ghosting cíclico o apariciones fantasma',
+        description: 'Desaparece semanas o fines de semana enteros sin avisar. Reaparece casualmente con un meme o un "hola perdida" fingiendo amnesia y esperando que estés disponible.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 2,
+    axis: 'Eje 2: Responsabilidad Afectiva',
+    category: 'Cómo habla de su pasado',
+    title: '¿Asume su parte de responsabilidad o se victimiza diciendo que todas sus ex eran "locas o tóxicas"?',
+    subtitle: 'La narrativa sobre sus exparejas revela su capacidad de autocrítica y madurez para procesar cierres.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Habla con respeto y reconoce aprendizajes',
+        description: 'Reconoce que hubo diferencias irreconciliables o errores de ambas partes. No guarda rencor visible ni denigra a las mujeres con las que compartió su vida.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Minimiza, evade o insinúa que "siempre dio más"',
+        description: 'Cambia de tema incómodo, asegura que "el amor no era para él" o deja entrever que fue incomprendido y sacrificado sin asumir qué rol jugó en el desenlace.',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Victimización total: "todas eran tóxicas"',
+        description: 'Presenta un historial donde él siempre fue la víctima impecable y sus exparejas eran personas celosas, inestables o interesadas. Cero autocrítica ni introspección.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 3,
+    axis: 'Eje 3: Iniciativa & Cortesía Ejecutiva',
+    category: 'Iniciativa y planeación',
+    title: '¿Propone planes formales con tiempo o te escribe de último minuto a deshoras buscando solo comodidad?',
+    subtitle: 'El interés genuino se traduce en anticipación y esfuerzo para encajar con tu agenda profesional.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Planes formales con fecha, hora y lugar anticipado',
+        description: 'Pregunta por tu disponibilidad con días de antelación, reserva en lugares de nivel y diseña experiencias pensadas para conversar y conocerse con comodidad.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Propuestas vagas o improvisadas el mismo día',
+        description: 'Te dice "a ver qué hacemos el viernes" pero no concreta hasta las 6:00 p.m. del mismo día. Deja los planes en el aire manteniéndote en espera pasiva.',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Citas a deshoras o propuestas de bajo esfuerzo',
+        description: 'Mensajes a las 10:30 p.m. invitándote a "tomar algo rápido en su casa", sumarse a su plan con amigos sin avisar o planes que requieren que tú hagas todo el desplazamiento.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 4,
+    axis: 'Eje 4: Estabilidad & Autonomía',
+    category: 'Autonomía financiera y personal',
+    title: '¿Tiene su vida resuelta y estabilidad básica o da indicios de buscar una patrocinadora / proveedora?',
+    subtitle: 'A esta etapa de la vida, la independencia y solvencia emocional y económica deben ser simétricas.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Autonomía económica y estilo de vida resuelto',
+        description: 'Vive de acuerdo con su estatus profesional, asume sus compromisos sin quejarse ni alardear, y demuestra un estándar de solvencia acorde a su edad adulta.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Inconsistencias entre lo que aparenta y su realidad',
+        description: 'Presume proyectos millonarios o autos costosos pero tiene problemas recurrentes con sus tarjetas, se queja de deudas constantes o posterga pagos simples.',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Busca comodidad en tu posición o insinuaciones financieras',
+        description: 'Muestra excesivo interés en tus ingresos, propiedades o contactos de negocios. Insinúa que "una mujer moderna paga la mitad o más" o pide favores económicos tempranos.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 5,
+    axis: 'Eje 5: Gestión de Límites',
+    category: 'Reacción ante tus límites',
+    title: 'Si le dices que no puedes salir o que prefieres ir más despacio, ¿lo respeta con madurez o se molesta/presiona?',
+    subtitle: 'La reacción ante un "NO" o un límite firme es la radiografía más precisa del temperamento y respeto de un hombre.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Respeta con empatía y propone otra fecha sin fricción',
+        description: 'Comprende tus tiempos laborales o personales de inmediato: "Entiendo perfecto, que te vaya excelente en tu reunión, coordinamos para la próxima semana".',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Acepta a regañadientes con ironía o silencios fríos',
+        description: 'Dice que está bien pero cambia de tono drásticamente, responde seco o lanza bromas pasivo-agresivas: "Veo que siempre tienes cosas más importantes".',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Presión insistente, manipulación o molestia abierta',
+        description: 'Insiste una y otra vez para que cedas, cuestiona tus motivos, intenta hacerte sentir culpable ("si de verdad quisieras te hacías un espacio") o se enoja visiblemente.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 6,
+    axis: 'Eje 6: Claridad de Propósito',
+    category: 'Claridad de intenciones',
+    title: '¿Es transparente sobre lo que busca o responde con evasivas tipo "a ver qué surge / no me gustan las etiquetas"?',
+    subtitle: 'Un hombre maduro sabe qué tipo de vínculo desea construir y no juega a la confusión estratégica.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Postura clara y alineada a un proyecto de pareja serio',
+        description: 'Expresa sin titubeos que busca una relación formal y estable con una mujer que comparta sus valores. No tiene miedo a la palabra exclusividad ni a proyectarse.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Discurso ambiguo: "vamos viendo cómo fluye"',
+        description: 'Dice que le caes increíble y que le encantas, pero evita comprometerse con definiciones claras: "prefiero no ponerme metas y dejar que el destino decida".',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Alergia al compromiso y retórica evasiva',
+        description: 'Usa frases como "no creo en las etiquetas", "vengo saliendo de algo y solo quiero pasarla bien", pero exige derechos de novio y fidelidad unilateral sin ofrecer nada a cambio.',
+        colorType: 'red'
+      }
+    ]
+  },
+  {
+    id: 7,
+    axis: 'Eje 7: Reciprocidad & Escucha Activa',
+    category: 'Interés en tu mundo',
+    title: '¿Te escucha y pregunta sobre tus proyectos, o solo habla de sí mismo y de sus logros?',
+    subtitle: 'El narcisismo encubierto se delata en la incapacidad de interesarse auténticamente por el intelecto y vida de la mujer.',
+    options: [
+      {
+        id: 'green',
+        badge: 'Conducta Madura (Verde)',
+        label: 'Escucha activa, curiosidad genuina y reciprocidad',
+        description: 'Pregunta detalles sobre tu profesión, recuerda nombres de personas que mencionaste y celebra tus logros con admiración sincera, sin competir contigo.',
+        colorType: 'green'
+      },
+      {
+        id: 'amber',
+        badge: 'Conducta Dudosa (Ámbar)',
+        label: 'Preguntas protocolares con desvío rápido hacia él',
+        description: 'Hace la pregunta básica de cortesía pero a los 30 segundos interrumpe para contar una anécdota suya más grande o impresionante.',
+        colorType: 'amber'
+      },
+      {
+        id: 'red',
+        badge: 'Bandera Roja (Roja)',
+        label: 'Monólogo narcisista o desinterés visible',
+        description: 'La conversación gira 90% alrededor de sus negocios, su físico o sus problemas. Si tú hablas, mira el celular, bosteza o compite minimizando tus triunfos.',
+        colorType: 'red'
+      }
+    ]
+  }
+];
+
+export default function App() {
+  // Estados de navegación
+  const [screen, setScreen] = useState<'welcome' | 'quiz' | 'analyzing' | 'result'>('welcome');
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [prospectAlias, setProspectAlias] = useState<string>('');
+  const [answers, setAnswers] = useState<Record<number, OptionColor>>({});
+  const [copied, setCopied] = useState<boolean>(false);
+  const [analyzingStepText, setAnalyzingStepText] = useState<string>('Iniciando calibración...');
+  const [analyzingProgress, setAnalyzingProgress] = useState<number>(10);
+  
+  // Referencia para temporizadores de avance automático
+  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpiar temporizador al desmontar
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) {
+        clearTimeout(autoAdvanceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Seguridad y Bloqueo de Descarga / Inspección en runtime
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I' || e.key === 'j' || e.key === 'J' || e.key === 'c' || e.key === 'C'))
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Animación de cálculo
+  useEffect(() => {
+    if (screen === 'analyzing') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      const step1 = setTimeout(() => {
+        setAnalyzingStepText('Cruzando patrones de coherencia y tiempo de respuesta...');
+        setAnalyzingProgress(35);
+      }, 400);
+
+      const step2 = setTimeout(() => {
+        setAnalyzingStepText('Evaluando tolerancia a límites y responsabilidad afectiva...');
+        setAnalyzingProgress(70);
+      }, 950);
+
+      const step3 = setTimeout(() => {
+        setAnalyzingStepText('Sintetizando veredicto ejecutivo del Semáforo...');
+        setAnalyzingProgress(95);
+      }, 1500);
+
+      const finish = setTimeout(() => {
+        setScreen('result');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 2000);
+
+      return () => {
+        clearTimeout(step1);
+        clearTimeout(step2);
+        clearTimeout(step3);
+        clearTimeout(finish);
+      };
+    }
+  }, [screen]);
+
+  // Manejo de selecciones con AVANCE AUTOMÁTICO a la siguiente pregunta desde arriba
+  const handleSelectOption = (questionId: number, optionColor: OptionColor) => {
+    // 1. Guardar la respuesta inmediatamente para reflejar la selección visual
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: optionColor
+    }));
+
+    // Cancelar cualquier timeout previo para evitar saltos dobles
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+    }
+
+    // 2. Avance automático con breve pausa táctil (280ms) para percibir la selección
+    autoAdvanceTimerRef.current = setTimeout(() => {
+      if (currentStep < QUESTIONS.length - 1) {
+        setCurrentStep(prev => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setScreen('analyzing');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 280);
+  };
+
+  const handleBack = () => {
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+    }
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setScreen('welcome');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleStartQuiz = () => {
+    setScreen('quiz');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleRestart = () => {
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+    }
+    setAnswers({});
+    setCurrentStep(0);
+    setProspectAlias('');
+    setScreen('welcome');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Cálculo de resultados
+  const counts = {
+    green: Object.values(answers).filter(v => v === 'green').length,
+    amber: Object.values(answers).filter(v => v === 'amber').length,
+    red: Object.values(answers).filter(v => v === 'red').length,
+  };
+
+  // Determinar Semáforo
+  let verdictColor: OptionColor = 'amber';
+  if (counts.red >= 2 || (counts.red === 1 && counts.amber >= 3)) {
+    verdictColor = 'red';
+  } else if (counts.green >= 5 && counts.red === 0) {
+    verdictColor = 'green';
+  } else {
+    verdictColor = 'amber';
+  }
+
+  // Nombre amigable para mostrar
+  const displayName = prospectAlias.trim() || 'Este prospecto';
+
+  // Copia al portapapeles y compartir WhatsApp
+  const shareMessage = `*Diagnóstico del Semáforo de Banderas Rojas*\nCoach: Carlos Luna\nEvaluación del prospecto: ${displayName}\n\n🚦 *Resultado:* ${
+    verdictColor === 'green'
+      ? '🟢 LUZ VERDE - Alta Madurez Emocional y Coherencia'
+      : verdictColor === 'amber'
+      ? '🟡 LUZ ÁMBAR - Alerta Precautoria / Conductas Ambivalentes'
+      : '🔴 LUZ ROJA - Bandera Roja Crítica / Alto Riesgo de Inmadurez'
+  }\n\n📊 *Desglose de Conductas:*\n• Madurez verificada: ${counts.green}/7\n• Inconsistencias: ${counts.amber}/7\n• Banderas Rojas: ${counts.red}/7\n\nHerramienta estratégica para mujeres profesionistas.`;
+
+  const handleShareWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+    window.location.href = url;
+  };
+
+  const handleCopySummary = () => {
+    navigator.clipboard.writeText(shareMessage).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  const currentQ = QUESTIONS[currentStep];
+
+  return (
+    <div className="min-h-screen bg-[#080d1a] text-slate-100 flex flex-col justify-between selection:bg-rose-500/20 selection:text-rose-200 font-sans">
+      
+      {/* Header Ejecutivo Minimalista con Coach: Carlos Luna */}
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-[#080d1a]/90 border-b border-slate-800/80 px-4 py-3">
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            {/* Pequeño icono de semáforo estilizado */}
+            <div className="flex space-x-1 p-1 bg-slate-900 border border-slate-800 rounded-full shadow-inner">
+              <span className={`w-2 h-2 rounded-full ${verdictColor === 'green' && screen === 'result' ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-emerald-500/40'}`}></span>
+              <span className={`w-2 h-2 rounded-full ${verdictColor === 'amber' && screen === 'result' ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b]' : 'bg-amber-500/40'}`}></span>
+              <span className={`w-2 h-2 rounded-full ${verdictColor === 'red' && screen === 'result' ? 'bg-rose-500 shadow-[0_0_8px_#ef4444]' : 'bg-rose-500/40'}`}></span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-xs tracking-wider uppercase text-slate-200">
+                Escáner de Madurez
+              </span>
+              <span className="text-[10px] font-semibold text-amber-400 tracking-wide flex items-center">
+                <UserCheck className="w-2.5 h-2.5 mr-1 text-amber-400 inline" />
+                Coach: Carlos Luna
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60">
+              <Lock className="w-2.5 h-2.5 mr-1 text-emerald-400" />
+              100% Confidencial
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Contenido Principal */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 md:py-10">
+        <div className="w-full max-w-xl mx-auto">
+
+          {/* ================= PANTALLA 1: BIENVENIDA (HERO) ================= */}
+          {screen === 'welcome' && (
+            <div className="space-y-6">
+              
+              {/* Badge superior de Coach y Metodología */}
+              <div className="text-center space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-emerald-500/15 border border-amber-500/40 text-amber-300 shadow-sm">
+                  <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Coach: Carlos Luna</span>
+                </div>
+              </div>
+
+              {/* Título y subtítulo */}
+              <div className="text-center space-y-2">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-tight">
+                  El Semáforo de Banderas Rojas
+                </h1>
+                <p className="text-sm md:text-base text-rose-300/90 font-medium tracking-wide">
+                  Escáner de Madurez Masculina
+                </p>
+                <p className="text-xs md:text-sm text-slate-400 max-w-md mx-auto pt-1 leading-relaxed">
+                  Evalúa en menos de 3 minutos la coherencia real de un prospecto en sus primeras conversaciones o salidas. Filtra a tiempo antes de involucrarte emocionalmente.
+                </p>
+              </div>
+
+              {/* Carátula visible con bordes redondeados y sombra sutil (URL REQUERIDA) */}
+              <div className="relative group mx-auto max-w-md">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 via-amber-500/20 to-rose-500/20 rounded-2xl blur-md opacity-60 group-hover:opacity-100 transition duration-500"></div>
+                <div className="relative rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-900/90 shadow-2xl">
+                  <img
+                    src="https://i.postimg.cc/jqWWPXpD/Gemini-Generated-Image-kvx1z6kvx1z6kvx1.jpg"
+                    alt="El Semáforo de Banderas Rojas - Escáner de Madurez Masculina"
+                    className="w-full h-56 sm:h-64 object-cover object-center transform group-hover:scale-[1.01] transition duration-700"
+                    loading="eager"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#080d1a] via-[#080d1a]/20 to-transparent"></div>
+                  
+                  {/* Badge sobre la imagen (sin 35 a 54 años) */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60">
+                    <span className="flex items-center text-emerald-400 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                      Filtro Estratégico Ejecutivo
+                    </span>
+                    <span className="text-amber-400 font-medium">Coach: Carlos Luna</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Indicador de 3 puntos clave */}
+              <div className="bg-slate-900/60 backdrop-blur-sm border border-slate-800/80 rounded-xl p-3.5 text-xs text-slate-300 space-y-2">
+                <div className="flex items-center space-x-2 text-slate-200 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong>Evaluación confidencial:</strong> Tus respuestas no se guardan en ningún servidor.</span>
+                </div>
+                <div className="flex items-center space-x-2 text-slate-200 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span><strong>7 reactivos de conducta real:</strong> Sin suposiciones ni justificaciones románticas.</span>
+                </div>
+                <div className="flex items-center space-x-2 text-slate-200 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span><strong>Diagnóstico de compatibilidad inmediato:</strong> Veredicto clínico claro en semáforo.</span>
+                </div>
+              </div>
+
+              {/* DESCARGO DE RESPONSABILIDAD EN LA PÁGINA INICIAL */}
+              <div className="bg-slate-900/70 border border-slate-800/90 rounded-xl p-3.5 text-left space-y-1.5">
+                <div className="flex items-center space-x-2 text-amber-400 font-semibold text-xs">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span>Descargo de Responsabilidad</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Esta herramienta es un recurso interactivo de orientación y autoevaluación basado en patrones habituales de conducta y comunicación interpersonal. No sustituye la intervención psicológica profesional, la psicoterapia clínica ni un diagnóstico pericial o legal formal. Su objetivo exclusivo es brindar claridad conceptual y herramientas de discernimiento para la toma de decisiones personales conscientes.
+                </p>
+              </div>
+
+              {/* Alias del prospecto (opcional) */}
+              <div className="space-y-1.5 bg-slate-900/40 p-3 rounded-xl border border-slate-800/60">
+                <label htmlFor="prospect-name" className="block text-xs font-medium text-slate-300">
+                  ¿Deseas personalizar con el nombre o alias de tu prospecto? <span className="text-slate-500">(Opcional)</span>
+                </label>
+                <input
+                  id="prospect-name"
+                  type="text"
+                  placeholder="Ej. Carlos, 'El abogado', 'El de la app'..."
+                  value={prospectAlias}
+                  onChange={(e) => setProspectAlias(e.target.value)}
+                  maxLength={40}
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/60 transition"
+                />
+              </div>
+
+              {/* Botón de inicio */}
+              <button
+                type="button"
+                onClick={handleStartQuiz}
+                className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:via-teal-500 hover:to-emerald-600 text-white font-semibold text-base py-3.5 px-6 shadow-lg shadow-emerald-950/40 transition-all duration-300 transform active:scale-[0.98] cursor-pointer flex items-center justify-center space-x-2"
+              >
+                <span>Iniciar Escaneo del Prospecto</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <p className="text-center text-[11px] text-slate-500">
+                Diseñado para mujeres que no negocian su paz ni su tiempo.
+              </p>
+            </div>
+          )}
+
+          {/* ================= PANTALLA 2: CUESTIONARIO (7 REACTIVOS INTERACTIVOS) ================= */}
+          {screen === 'quiz' && currentQ && (
+            <div className="space-y-5">
+              {/* Barra de progreso superior */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-medium text-slate-300">
+                    Reactivo {currentStep + 1} de {QUESTIONS.length}
+                  </span>
+                  <span className="text-amber-400/90 font-medium">
+                    {Math.round(((currentStep + 1) / QUESTIONS.length) * 100)}% Completado
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 transition-all duration-500 ease-out rounded-full"
+                    style={{ width: `${((currentStep + 1) / QUESTIONS.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Encabezado del Reactivo */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-lg backdrop-blur-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700/60">
+                    {currentQ.axis}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    {currentQ.category}
+                  </span>
+                </div>
+                <h2 className="text-base md:text-lg font-bold text-white leading-snug">
+                  {currentQ.title}
+                </h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {currentQ.subtitle}
+                </p>
+                <div className="pt-1 text-[10px] text-amber-400/80 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Selecciona una opción para avanzar automáticamente</span>
+                </div>
+              </div>
+
+              {/* 3 Opciones Interactivas (Verde / Ámbar / Rojo) */}
+              <div className="space-y-3">
+                {currentQ.options.map((option) => {
+                  const isSelected = answers[currentQ.id] === option.id;
+
+                  // Estilos diferenciados según el tipo de color del semáforo
+                  const colorThemes = {
+                    green: {
+                      borderSelected: 'border-emerald-500/80 bg-emerald-950/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]',
+                      dot: 'bg-emerald-400 ring-4 ring-emerald-950/60',
+                      badge: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60',
+                      accent: 'text-emerald-400'
+                    },
+                    amber: {
+                      borderSelected: 'border-amber-500/80 bg-amber-950/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]',
+                      dot: 'bg-amber-400 ring-4 ring-amber-950/60',
+                      badge: 'bg-amber-950/60 text-amber-300 border-amber-800/60',
+                      accent: 'text-amber-400'
+                    },
+                    red: {
+                      borderSelected: 'border-rose-500/80 bg-rose-950/30 shadow-[0_0_15px_rgba(244,63,94,0.2)]',
+                      dot: 'bg-rose-500 ring-4 ring-rose-950/60',
+                      badge: 'bg-rose-950/60 text-rose-300 border-rose-800/60',
+                      accent: 'text-rose-400'
+                    }
+                  };
+
+                  const theme = colorThemes[option.colorType];
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handleSelectOption(currentQ.id, option.id)}
+                      className={`w-full text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer active:scale-[0.99] ${
+                        isSelected
+                          ? `${theme.borderSelected} ring-1 ring-slate-400/20`
+                          : 'border-slate-800/90 bg-slate-900/40 hover:bg-slate-900/80 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${theme.badge}`}>
+                              {option.badge}
+                            </span>
+                          </div>
+                          <h3 className={`text-sm font-semibold leading-tight ${isSelected ? 'text-white font-bold' : 'text-slate-200'}`}>
+                            {option.label}
+                          </h3>
+                          <p className="text-xs text-slate-400 leading-relaxed">
+                            {option.description}
+                          </p>
+                        </div>
+
+                        {/* Indicador de radio circular */}
+                        <div className="pt-0.5 shrink-0">
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                            isSelected
+                              ? `${theme.borderSelected} bg-slate-900`
+                              : 'border-slate-700 bg-slate-950'
+                          }`}>
+                            {isSelected && (
+                              <div className={`w-2.5 h-2.5 rounded-full ${theme.dot}`} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Botón para volver atrás si desea cambiar su respuesta anterior */}
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex items-center px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium transition cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1.5" />
+                  {currentStep === 0 ? 'Volver al Inicio' : 'Modificar Reactivo Anterior'}
+                </button>
+
+                <span className="text-[11px] text-slate-500 italic">
+                  Paso {currentStep + 1} de {QUESTIONS.length}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ================= PANTALLA 3: ANALIZANDO (PANTALLA DE CARGA Y SÍNTESIS) ================= */}
+          {screen === 'analyzing' && (
+            <div className="py-12 px-4 text-center space-y-6">
+              {/* Animación del escáner */}
+              <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 animate-pulse"></div>
+                <div className="w-20 h-20 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shadow-xl">
+                  <Compass className="w-10 h-10 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-white">
+                  Analizando patrones de conducta...
+                </h3>
+                <p className="text-xs text-slate-400 h-6 transition-all duration-300">
+                  {analyzingStepText}
+                </p>
+              </div>
+
+              {/* Barra de progreso de carga */}
+              <div className="max-w-xs mx-auto w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 transition-all duration-500 ease-out"
+                  style={{ width: `${analyzingProgress}%` }}
+                />
+              </div>
+
+              <div className="text-[11px] text-slate-500 italic">
+                Coach: Carlos Luna • Evaluación de compatibilidad y madurez
+              </div>
+            </div>
+          )}
+
+          {/* ================= PANTALLA 4: RESULTADOS (EL SEMÁFORO DE BANDERAS ROJAS) ================= */}
+          {screen === 'result' && (
+            <div className="space-y-6">
+              
+              {/* COMPONENTE VISUAL DEL SEMÁFORO (ILUMINADO) */}
+              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl text-center space-y-4 backdrop-blur-md">
+                
+                {/* Header de Veredicto */}
+                <div className="space-y-1">
+                  <span className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold">
+                    Diagnóstico Estratégico para
+                  </span>
+                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                    {displayName}
+                  </h2>
+                  <p className="text-[11px] text-amber-400 font-medium">
+                    Metodología de Calibración Afectiva • Coach: Carlos Luna
+                  </p>
+                </div>
+
+                {/* Caja de Semáforo Físico iluminada */}
+                <div className="inline-flex flex-col items-center p-3.5 bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] space-y-2.5">
+                  {/* Luz Roja */}
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-10 h-10 rounded-full transition-all duration-500 flex items-center justify-center ${
+                        verdictColor === 'red'
+                          ? 'bg-rose-500 shadow-[0_0_25px_#f43f5e] ring-4 ring-rose-900/50 scale-105'
+                          : 'bg-rose-950/40 border border-rose-900/30 opacity-40'
+                      }`}
+                    >
+                      {verdictColor === 'red' && <XCircle className="w-5 h-5 text-white animate-pulse" />}
+                    </div>
+                  </div>
+
+                  {/* Luz Ámbar */}
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-10 h-10 rounded-full transition-all duration-500 flex items-center justify-center ${
+                        verdictColor === 'amber'
+                          ? 'bg-amber-400 shadow-[0_0_25px_#f59e0b] ring-4 ring-amber-900/50 scale-105'
+                          : 'bg-amber-950/40 border border-amber-900/30 opacity-40'
+                      }`}
+                    >
+                      {verdictColor === 'amber' && <AlertTriangle className="w-5 h-5 text-slate-950 font-bold animate-pulse" />}
+                    </div>
+                  </div>
+
+                  {/* Luz Verde */}
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-10 h-10 rounded-full transition-all duration-500 flex items-center justify-center ${
+                        verdictColor === 'green'
+                          ? 'bg-emerald-400 shadow-[0_0_25px_#10b981] ring-4 ring-emerald-900/50 scale-105'
+                          : 'bg-emerald-950/40 border border-emerald-900/30 opacity-40'
+                      }`}
+                    >
+                      {verdictColor === 'green' && <CheckCircle2 className="w-5 h-5 text-slate-950 font-bold animate-pulse" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Título de Estado y Dictamen Principal */}
+                <div>
+                  {verdictColor === 'green' && (
+                    <div className="space-y-1">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-700/60 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                        Luz Verde • Perfil con Madurez Emocional
+                      </span>
+                      <h3 className="text-lg md:text-xl font-bold text-emerald-400 pt-1">
+                        Disponibilidad Afectiva y Coherencia Comprobada
+                      </h3>
+                      <p className="text-xs md:text-sm text-slate-300 max-w-md mx-auto pt-1 leading-relaxed">
+                        Este prospecto muestra patrones de un hombre adulto con salud mental, respeto por tus límites, proyecto propio y disposición real a construir con reciprocidad.
+                      </p>
+                    </div>
+                  )}
+
+                  {verdictColor === 'amber' && (
+                    <div className="space-y-1">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-950 text-amber-300 border border-amber-700/60 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                        Luz Ámbar • Alerta Precautoria y Ambivalencia
+                      </span>
+                      <h3 className="text-lg md:text-xl font-bold text-amber-400 pt-1">
+                        Inconsistencia o Discurso Ambiguo
+                      </h3>
+                      <p className="text-xs md:text-sm text-slate-300 max-w-md mx-auto pt-1 leading-relaxed">
+                        Existen señales mixtas. Puede sentirse atraído o disfrutar de tu compañía, pero muestra vacíos de disponibilidad, planes débiles o actitudes reactivas. Procede con prudencia.
+                      </p>
+                    </div>
+                  )}
+
+                  {verdictColor === 'red' && (
+                    <div className="space-y-1">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-700/60 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+                        Luz Roja • Bandera Roja Crítica
+                      </span>
+                      <h3 className="text-lg md:text-xl font-bold text-rose-400 pt-1">
+                        Inmadurez Afectiva Severa o Evasión de Responsabilidad
+                      </h3>
+                      <p className="text-xs md:text-sm text-slate-300 max-w-md mx-auto pt-1 leading-relaxed">
+                        Alerta de alto riesgo emocional. Presenta rasgos claros de victimización, manipulación, evasión de límites o búsqueda de comodidad unilateral. No cumple el estándar para una relación sana y simétrica.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desglose Cuantitativo de Banderas */}
+                <div className="grid grid-cols-3 gap-2.5 pt-2">
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-emerald-900/40 text-center">
+                    <span className="block text-xl font-bold text-emerald-400">{counts.green}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Verdes (Madurez)</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-amber-900/40 text-center">
+                    <span className="block text-xl font-bold text-amber-400">{counts.amber}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Ámbar (Dudas)</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-rose-900/40 text-center">
+                    <span className="block text-xl font-bold text-rose-400">{counts.red}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Rojas (Alertas)</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* PROTOCOLO ESTRATÉGICO EJECUTIVO */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+                <div className="flex items-center space-x-2 text-white font-semibold text-sm">
+                  <HeartHandshake className="w-4 h-4 text-amber-400" />
+                  <span>Protocolo Estratégico Recomendado</span>
+                </div>
+
+                {verdictColor === 'green' && (
+                  <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                      <strong>1. Ritmo orgánico sin apresurar:</strong> Aunque el perfil sea muy prometedor, mantén tu ritmo habitual. Deja que el tiempo confirme la consistencia durante los primeros 90 días.
+                    </p>
+                    <p>
+                      <strong>2. Reciprocidad equivalente:</strong> Responde a su esfuerzo con aprecio y cordialidad, premiando la iniciativa formal y la honestidad.
+                    </p>
+                    <p>
+                      <strong>3. Mantén tus espacios:</strong> Un hombre maduro admira a una mujer con vida propia, proyectos y pasiones. No modifiques tu agenda personal ni laboral de golpe.
+                    </p>
+                  </div>
+                )}
+
+                {verdictColor === 'amber' && (
+                  <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                      <strong>1. Cero sobreinversión emocional:</strong> No asumas el rol de resolverle la vida, ni de terapeuta o planificadora de citas. Deja que sea él quien demuestre si tiene capacidad de seguimiento.
+                    </p>
+                    <p>
+                      <strong>2. Prueba de límites:</strong> Si cancela un plan de último minuto, no te muestres disponible al instante para el día siguiente. Observa si repara el error con cortesía o si se enfría.
+                    </p>
+                    <p>
+                      <strong>3. Fecha límite interna:</strong> Mantén una observación calmada durante 2 a 3 semanas. Si las inconsistencias persisten, desescala amablemente sin dramas.
+                    </p>
+                  </div>
+                )}
+
+                {verdictColor === 'red' && (
+                  <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                      <strong>1. Descarte sin explicaciones desgastantes:</strong> Tu tiempo y energía mental son tus activos más valiosos. No intentes "hacerlo entender" o discutir; las personas inmaduras usan las explicaciones para manipular.
+                    </p>
+                    <p>
+                      <strong>2. Distanciamiento estratégico:</strong> No aceptes llamadas nocturnas ni citas improvisadas. Puedes enviar un mensaje neutro de cierre: <em>"Aprecio haberte conocido, pero busco una sintonía y proyectos diferentes. Te deseo mucho éxito."</em>
+                    </p>
+                    <p>
+                      <strong>3. Cero segundas oportunidades a la falta de respeto:</strong> Si ya mostró desprecio a tus límites o victimización, esa es la antesala de cómo será cualquier vínculo futuro.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* 3 PREGUNTAS FILTRO DE CALIBRACIÓN */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+                <div className="flex items-center space-x-2 text-slate-200 font-semibold text-sm">
+                  <Compass className="w-4 h-4 text-emerald-400" />
+                  <span>3 Preguntas Filtro para tu Próxima Conversación</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Haz estas preguntas de forma casual y en tono relajado en tu próxima cita para confirmar con absoluta certeza su nivel de madurez:
+                </p>
+
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <p className="text-xs text-amber-300 font-medium">
+                      1. Sobre sus cierres de ciclo:
+                    </p>
+                    <p className="text-xs text-slate-300 italic pt-1">
+                      "¿Qué aprendiste de ti mismo en tu última relación seria que hoy haces completamente diferente?"
+                    </p>
+                    <p className="text-[10px] text-slate-400 pt-1">
+                      (Un hombre maduro habla de su aprendizaje; el inmaduro vuelve a quejarse de su ex).
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <p className="text-xs text-amber-300 font-medium">
+                      2. Sobre su visión y tiempos:
+                    </p>
+                    <p className="text-xs text-slate-300 italic pt-1">
+                      "Para ti, ¿cómo se ve una relación de pareja sana y equitativa en este punto de tu vida profesional?"
+                    </p>
+                    <p className="text-[10px] text-slate-400 pt-1">
+                      (Detecta si tiene un plan concreto o si responde con vaguedades de "solo fluir").
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <p className="text-xs text-amber-300 font-medium">
+                      3. Sobre la autonomía y límites:
+                    </p>
+                    <p className="text-xs text-slate-300 italic pt-1">
+                      "Mi profesión y mi tiempo a solas son muy importantes para mí; ¿cómo manejas tú el balance de espacios personales en pareja?"
+                    </p>
+                    <p className="text-[10px] text-slate-400 pt-1">
+                      (Observa si admira tu independencia o si denota necesidad de control o demanda).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOTONES DE ACCIÓN: COMPARTIR Y REINICIAR */}
+              <div className="space-y-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleShareWhatsApp}
+                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs md:text-sm py-3.5 px-4 shadow-lg shadow-emerald-950/40 transition active:scale-[0.98] cursor-pointer flex items-center justify-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Compartir Diagnóstico por WhatsApp</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCopySummary}
+                    className="rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-medium py-3 px-3 transition active:scale-[0.98] cursor-pointer flex items-center justify-center space-x-1.5"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-300">¡Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-slate-400" />
+                        <span>Copiar Resumen</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRestart}
+                    className="rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-medium py-3 px-3 transition active:scale-[0.98] cursor-pointer flex items-center justify-center space-x-1.5"
+                  >
+                    <RotateCcw className="w-4 h-4 text-slate-400" />
+                    <span>Evaluar Otro Prospecto</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Nota de confidencialidad y cierre */}
+              <div className="text-center pt-2">
+                <p className="text-[11px] text-slate-500">
+                  Evaluación confidencial • Metodología por Coach: Carlos Luna
+                </p>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* Footer sobrio y elegante */}
+      <footer className="border-t border-slate-800/80 px-4 py-3 bg-[#080d1a]/95 text-center text-[11px] text-slate-500">
+        <div className="max-w-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1">
+          <span>El Semáforo de Banderas Rojas © 2026</span>
+          <span className="text-amber-400/90 font-medium">Coach: Carlos Luna</span>
+          <span className="text-slate-400">Guía de Decisión Ejecutiva para Mujeres Profesionistas</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
